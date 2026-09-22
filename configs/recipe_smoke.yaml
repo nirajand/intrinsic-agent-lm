@@ -1,0 +1,24 @@
+data_root: data-smoke
+tokenizer: {}
+model:
+  vocab_size: 264
+  max_seq_len: 128
+  d_model: 128
+  n_layers: 2
+  n_heads: 4
+  n_kv_heads: 2
+  ffn_mult: 2.5
+  memory_slots: 8
+  planning_steps: 2
+  action_classes: 8
+  tie_embeddings: true
+train:
+  output_dir: runs/smoke
+  device: cpu
+  max_steps: 3
+  warmup_steps: 1
+  lr: 1.0e-3
+  stage_order: [pretrain]
+datasets: {}
+stages:
+  pretrain: {max_steps: 3}

@@ -1,0 +1,30 @@
+pretrain:
+  data_contract: text
+  objective: causal_language_modeling
+sft:
+  data_contract: messages
+  objective: supervised_finetuning
+reward_model:
+  data_contract: pairwise_preference
+  objective: Bradley_Terry_reward_model
+dpo:
+  data_contract: prompt_chosen_rejected
+  objective: reference_relative_preference_optimization
+rlhf:
+  data_contract: prompts_plus_reward_model
+  objective: PPO_with_learned_reward
+rlaif:
+  data_contract: AI_judged_preferences
+  objective: DPO_or_PPO
+rlvr:
+  data_contract: prompts_plus_verifier
+  objective: verifier_reward_RL
+grpo:
+  data_contract: grouped_rollouts
+  objective: group_relative_policy_optimization
+ppo:
+  data_contract: rollouts_old_logprob_reward
+  objective: clipped_policy_optimization
+dapo:
+  data_contract: grouped_rollouts
+  objective: decoupled_clipping_dynamic_sampling_overlong_shaping

@@ -1,0 +1,180 @@
+# User-requested Hugging Face additions curated for this training recipe.
+# These are DATA REFERENCES, not redistributed copies. Review upstream terms before use.
+# `enabled_in_recipe` is intentionally explicit to prevent accidental multi-terabyte downloads.
+datasets:
+  - name: arxiv-complete-paper-text
+    repo: secemp9/arxiv-complete
+    subset: paper_text
+    split: train
+    streaming: true
+    max_examples: 50000
+    weight: 0.10
+    license: mixed-arxiv-author-licenses
+    commercial_use: unknown
+    provenance_review: required
+    intended_stage: pretrain
+    enabled_in_recipe: true
+    notes: "Prefer the paper_text subset; do not materialize the complete corpus by default."
+
+  - name: zgcm-1-pretrain-stage1
+    repo: zgcagi/ZGCM-1-Data
+    subset: zgcm-1-pretrain-stage1
+    split: train
+    streaming: true
+    max_examples: 100000
+    weight: 0.10
+    license: other-mixed-upstream
+    commercial_use: unknown
+    requires_hf_acceptance: true
+    provenance_review: required
+    intended_stage: pretrain
+    enabled_in_recipe: true
+    notes: "HF dataset requires accepting access conditions; record-level licenses govern use."
+
+  - name: ultradata-code-l3-python
+    repo: openbmb/UltraData-Code
+    subset: UltraData-Code-L3
+    split: py
+    streaming: true
+    max_examples: 100000
+    weight: 0.08
+    license: apache-2.0-plus-upstream-repository-licenses
+    commercial_use: unknown
+    provenance_review: required
+    intended_stage: pretrain
+    enabled_in_recipe: true
+    notes: "L3 contains task, analysis, solution and test fields; upstream repository licenses still apply."
+
+  - name: ultradata-sft-agent-code
+    repo: openbmb/UltraData-SFT-Agent-2609
+    subset: Code-Agent
+    split: train
+    streaming: true
+    max_examples: 50000
+    weight: 0.12
+    license: apache-2.0
+    commercial_use: unknown
+    provenance_review: required
+    intended_stage: sft
+    enabled_in_recipe: true
+    notes: "Agent trajectories with tool invocation, execution feedback, verification and recovery."
+
+  - name: ultradata-sft-agent-tool-use
+    repo: openbmb/UltraData-SFT-Agent-2609
+    subset: Tool-Use
+    split: train
+    streaming: true
+    max_examples: 30000
+    weight: 0.08
+    license: apache-2.0
+    commercial_use: unknown
+    provenance_review: required
+    intended_stage: sft
+    enabled_in_recipe: true
+    notes: "Function calling and multi-turn tool-use trajectories."
+
+  - name: fable-5-premium-v2
+    repo: saidutta69/fable-5-premium-v2
+    split: train
+    streaming: true
+    max_examples: 50000
+    weight: 0.08
+    license: mit
+    commercial_use: yes-license-but-source-rights-review-required
+    provenance_review: required
+    intended_stage: sft
+    enabled_in_recipe: true
+    notes: "100k agent traces; OpenAI chat format includes tool calls/tool outputs."
+
+  - name: morethought-fable-5-1-reasoning
+    repo: MoreThought/Fable-5.1-Max-Reasoning-Filtered-5000x
+    split: train
+    streaming: true
+    max_examples: 5000
+    weight: 0.06
+    license: apache-2.0
+    commercial_use: unknown
+    provenance_review: required
+    intended_stage: sft
+    enabled_in_recipe: true
+    notes: "Long reasoning/coding traces; treat generated reasoning as training text, not an authority signal."
+
+  - name: spark-234k-scientific-reasoning
+    repo: OpenDataArena/Spark-234K
+    split: train
+    streaming: true
+    max_examples: 100000
+    weight: 0.08
+    license: apache-2.0
+    commercial_use: unknown
+    provenance_review: required
+    intended_stage: sft
+    enabled_in_recipe: true
+    notes: "Scientific instruction/output pairs across multiple disciplines."
+
+  - name: ultradata-rl-math
+    repo: openbmb/UltraData-RL-2609
+    subset: Math
+    split: train
+    streaming: true
+    max_examples: 30000
+    weight: 0.10
+    license: apache-2.0-plus-upstream-licenses
+    commercial_use: unknown
+    provenance_review: required
+    intended_stage: rlvr
+    enabled_in_recipe: true
+    notes: "Explicit ground_truth; verifier-oriented RL data."
+
+  - name: ultradata-rl-code
+    repo: openbmb/UltraData-RL-2609
+    subset: Code
+    split: train
+    streaming: true
+    max_examples: 15000
+    weight: 0.10
+    license: apache-2.0-plus-upstream-licenses
+    commercial_use: unknown
+    provenance_review: required
+    intended_stage: rlvr
+    enabled_in_recipe: true
+    notes: "ground_truth contains execution test cases; requires a sandbox verifier."
+
+  - name: kimi-cyber-reasoning
+    repo: echel0nn1881/kimi-cyber-reasoning
+    split: train
+    streaming: true
+    max_examples: 997
+    weight: 0.04
+    license: wtfpl
+    commercial_use: yes-license-but-content-review-required
+    provenance_review: required
+    intended_stage: sft
+    enabled_in_recipe: true
+    notes: "Cybersecurity reasoning/tool-call anchor set; contains explicit <think> traces and security-sensitive material."
+
+  - name: oi-uae-cyber-security
+    repo: oi-uae/cyber-security
+    split: train
+    streaming: true
+    max_examples: 50000
+    weight: 0.04
+    license: research-only-non-commercial
+    commercial_use: prohibited
+    provenance_review: required
+    intended_stage: sft
+    enabled_in_recipe: true
+    notes: "Do not include in commercial training. Dataset card states research-only, non-commercial use."
+
+  - name: saidutta69-fable-5-premium-v1-legacy
+    repo: saidutta69/fable-5-premium
+    split: train
+    streaming: true
+    max_examples: 12730
+    weight: 0.00
+    license: mit
+    commercial_use: unknown
+    provenance_review: required
+    intended_stage: sft
+    enabled_in_recipe: false
+    notes: "Legacy fallback; v2 supersedes this in the default recipe to avoid redundant sampling."

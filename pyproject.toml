@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=70", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "intrinsic-agent-lm"
+version = "0.2.0"
+description = "Frontier-scale research architecture with native agentic modules and an end-to-end staged training/data pipeline"
+requires-python = ">=3.10"
+dependencies = [
+  "torch>=2.5",
+  "safetensors>=0.4",
+  "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+data = [
+  "datasets>=3.0",
+  "huggingface_hub>=0.28",
+  "transformers>=4.50",
+  "tokenizers>=0.21",
+  "pyarrow>=18",
+]
+rl = [
+  "math-verify>=0.7",
+]
+monitor = [
+  "tensorboard>=2.16",
+]
+all = [
+  "datasets>=3.0",
+  "huggingface_hub>=0.28",
+  "transformers>=4.50",
+  "tokenizers>=0.21",
+  "pyarrow>=18",
+  "math-verify>=0.7",
+  "tensorboard>=2.16",
+]
+
+typing = ["types-PyYAML>=6.0"]
+
+authors = [{name="Intrinsic Agent LM contributors"}]
+
+[project.scripts]
+ialm = "ialm.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

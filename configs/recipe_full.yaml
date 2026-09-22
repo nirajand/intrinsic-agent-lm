@@ -1,0 +1,240 @@
+data_root: data
+tokenizer:
+  id: Qwen/Qwen3-8B
+model:
+  vocab_size: 151936
+  max_seq_len: 32768
+  d_model: 4096
+  n_layers: 32
+  n_heads: 32
+  n_kv_heads: 8
+  ffn_mult: 2.6875
+  rope_theta: 500000.0
+  memory_slots: 64
+  planning_steps: 4
+  action_classes: 8
+  tie_embeddings: true
+  use_qk_norm: true
+train:
+  output_dir: runs/frontier-research
+  device: cuda
+  seed: 42
+  batch_size: 128
+  micro_batch_size: 1
+  grad_accum_steps: 128
+  max_steps: 100000
+  warmup_steps: 2000
+  lr: 0.0003
+  min_lr_ratio: 0.1
+  weight_decay: 0.1
+  grad_clip: 1.0
+  bf16: true
+  alignment_beta: 0.1
+  grpo_group_size: 8
+  grpo_kl_beta: 0.02
+  ppo_clip_low: 0.2
+  ppo_clip_high: 0.2
+  dapo_clip_low: 0.2
+  dapo_clip_high: 0.28
+  stage_order:
+  - pretrain
+  - sft
+  - reward_model
+  - dpo
+  - rlhf
+  - rlaif
+  - rlvr
+  - grpo
+  - ppo
+  - dapo
+datasets:
+  pretrain:
+  - name: fineweb-10bt
+    repo: HuggingFaceFW/fineweb
+    subset: sample-10BT
+    split: train
+    streaming: true
+    max_examples: null
+    weight: 0.72
+  - name: arxiv-complete-paper-text
+    repo: secemp9/arxiv-complete
+    subset: paper_text
+    split: train
+    streaming: true
+    max_examples: 50000
+    weight: 0.1
+    license: mixed-arxiv-author-licenses
+    provenance_review: required
+  - name: zgcm-1-pretrain-stage1
+    repo: zgcagi/ZGCM-1-Data
+    subset: zgcm-1-pretrain-stage1
+    split: train
+    streaming: true
+    max_examples: 100000
+    weight: 0.08
+    license: other-mixed-upstream
+    requires_hf_acceptance: true
+    provenance_review: required
+  - name: ultradata-code-l3-python
+    repo: openbmb/UltraData-Code
+    subset: UltraData-Code-L3
+    split: py
+    streaming: true
+    max_examples: 100000
+    weight: 0.1
+    license: apache-2.0-plus-upstream-repository-licenses
+    provenance_review: required
+  sft:
+  - name: openhermes-2.5
+    repo: teknium/OpenHermes-2.5
+    split: train
+    max_examples: 500000
+  - name: ultradata-sft-agent-code
+    repo: openbmb/UltraData-SFT-Agent-2609
+    subset: Code-Agent
+    split: train
+    streaming: true
+    max_examples: 50000
+    weight: 0.15
+    license: apache-2.0
+    provenance_review: required
+  - name: ultradata-sft-agent-tool-use
+    repo: openbmb/UltraData-SFT-Agent-2609
+    subset: Tool-Use
+    split: train
+    streaming: true
+    max_examples: 30000
+    weight: 0.1
+    license: apache-2.0
+    provenance_review: required
+  - name: fable-5-premium-v2
+    repo: saidutta69/fable-5-premium-v2
+    split: train
+    streaming: true
+    max_examples: 50000
+    weight: 0.1
+    license: mit
+    provenance_review: required
+  - name: morethought-fable-5-1-reasoning
+    repo: MoreThought/Fable-5.1-Max-Reasoning-Filtered-5000x
+    split: train
+    streaming: true
+    max_examples: 5000
+    weight: 0.05
+    license: apache-2.0
+    provenance_review: required
+  - name: spark-234k-scientific-reasoning
+    repo: OpenDataArena/Spark-234K
+    split: train
+    streaming: true
+    max_examples: 100000
+    weight: 0.1
+    license: apache-2.0
+    provenance_review: required
+  - name: kimi-cyber-reasoning
+    repo: echel0nn1881/kimi-cyber-reasoning
+    split: train
+    streaming: true
+    max_examples: 997
+    weight: 0.03
+    license: wtfpl
+    provenance_review: required
+  - name: oi-uae-cyber-security
+    repo: oi-uae/cyber-security
+    split: train
+    streaming: true
+    max_examples: 50000
+    weight: 0.02
+    license: research-only-non-commercial
+    commercial_use: prohibited
+    provenance_review: required
+  reward_model:
+  - name: helpsteer2-preference-rm
+    repo: nvidia/HelpSteer2
+    subset: preference
+    split: train
+    max_examples: 100000
+  dpo:
+  - name: active-ultrafeedback
+    repo: ActiveUltraFeedback/ultrafeedback
+    subset: full
+    split: train
+    max_examples: 60000
+  rlhf:
+  - name: helpsteer2-preference
+    repo: nvidia/HelpSteer2
+    subset: preference
+    split: train
+  rlaif:
+  - name: active-ultrafeedback-rlaif
+    repo: ActiveUltraFeedback/ultrafeedback
+    subset: full
+    split: train
+    max_examples: 60000
+  rlvr:
+  - &id001
+    name: openr1-math
+    repo: open-r1/OpenR1-Math-220k
+    subset: default
+    split: train
+    max_examples: 60000
+  - &id002
+    name: ultradata-rl-math
+    repo: openbmb/UltraData-RL-2609
+    subset: Math
+    split: train
+    streaming: true
+    max_examples: 30000
+    weight: 0.4
+    license: apache-2.0-plus-upstream-licenses
+    provenance_review: required
+  - &id003
+    name: ultradata-rl-code
+    repo: openbmb/UltraData-RL-2609
+    subset: Code
+    split: train
+    streaming: true
+    max_examples: 15000
+    weight: 0.3
+    license: apache-2.0-plus-upstream-licenses
+    provenance_review: required
+  grpo:
+  - *id001
+  - *id002
+  - *id003
+  ppo:
+  - *id001
+  - *id002
+  - *id003
+  dapo:
+  - *id001
+  - *id002
+  - *id003
+stages:
+  pretrain:
+    max_steps: 100000
+  sft:
+    max_steps: 10000
+  reward_model:
+    max_steps: 5000
+  dpo:
+    max_steps: 10000
+  rlhf:
+    max_steps: 5000
+  rlaif:
+    max_steps: 5000
+  rlvr:
+    max_steps: 10000
+  grpo:
+    max_steps: 10000
+    max_new_tokens: 2048
+  ppo:
+    max_steps: 5000
+  dapo:
+    max_steps: 10000
+    max_new_tokens: 4096
+dataset_policy:
+  curated_config: configs/datasets/2026_curated_additions.yaml
+  mixture_policy: weighted_by_stage
+  max_local_materialization: explicit_per_dataset
+  license_gate: warn_and_require_provenance_review
