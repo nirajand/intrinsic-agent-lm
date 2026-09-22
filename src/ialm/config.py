@@ -1,6 +1,5 @@
 from __future__ import annotations
 from dataclasses import dataclass, field, asdict
-from typing import Any
 
 @dataclass
 class ModelConfig:
@@ -61,6 +60,7 @@ class TrainConfig:
     dpo_loss_type: str = "sigmoid"
     ppo_clip_low: float = 0.2
     ppo_clip_high: float = 0.2
+    ppo_epochs: int = 2
     grpo_group_size: int = 8
     grpo_kl_beta: float = 0.02
     dapo_clip_low: float = 0.2
@@ -77,10 +77,3 @@ class TrainConfig:
     stage_order: list[str] = field(default_factory=lambda: [
         "pretrain", "sft", "reward_model", "dpo", "rlhf", "rlaif", "rlvr", "grpo", "ppo", "dapo"
     ])
-
-@dataclass
-class RecipeConfig:
-    model: ModelConfig
-    train: TrainConfig
-    datasets: dict[str, list[dict[str, Any]]] = field(default_factory=dict)
-    stages: dict[str, dict[str, Any]] = field(default_factory=dict)

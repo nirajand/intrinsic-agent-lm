@@ -32,6 +32,22 @@ def test_curated_registry_and_recipe():
     assert "zgcagi/ZGCM-1-Data" in repos
 
 
+def test_recipe_all_specs_have_caps_or_local_override():
+    recipe = yaml.safe_load(Path("configs/recipe_full.yaml").read_text())
+    for stage, specs in recipe["datasets"].items():
+        for spec in specs:
+            assert spec.get("max_examples") is not None, f"{stage}/{spec['name']} missing max_examples"
+
+
+def test_catalog_weights_match_curated_yaml():
+    catalog = json.loads(Path("data/catalog.json").read_text())
+    curated = yaml.safe_load(Path("configs/datasets/2026_curated_additions.yaml").read_text())
+    for entry in curated["datasets"]:
+        name = entry["name"]
+        if name in catalog and entry.get("enabled_in_recipe", True):
+            assert abs(catalog[name]["weight"] - entry["weight"]) < 1e-9, name
+
+
 def test_new_processors():
     assert pretrain({"paper_text": "A paper"}) is None
     assert pretrain({"paper_text": "A scientific paper with enough text to train."})["text"]

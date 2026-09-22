@@ -1,5 +1,5 @@
 from __future__ import annotations
-import json, re, math
+import json, re
 from dataclasses import dataclass
 
 @dataclass

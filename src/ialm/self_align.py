@@ -1,7 +1,7 @@
 from __future__ import annotations
 import torch
 import torch.nn.functional as F
-from .model import IntrinsicAgentLM
+from .model import IntrinsicAgentLM  # noqa: F401 — re-export type for callers
 
 @torch.no_grad()
 def generate_self_preference(model:IntrinsicAgentLM,prompts:torch.Tensor,samples:int=2,max_new_tokens:int=128):

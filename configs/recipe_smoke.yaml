@@ -18,7 +18,16 @@ train:
   max_steps: 3
   warmup_steps: 1
   lr: 1.0e-3
+  micro_batch_size: 2
+  grad_accum_steps: 1
   stage_order: [pretrain]
-datasets: {}
+datasets:
+  pretrain:
+  - name: smoke-local
+    repo: tests/fixtures/smoke_pretrain.jsonl
+    split: train
+    streaming: false
+    max_examples: 8
+    weight: 1.0
 stages:
   pretrain: {max_steps: 3}

@@ -1,19 +1,12 @@
 from __future__ import annotations
-import copy, math
 import torch
 import torch.nn.functional as F
 from .losses import ppo_loss, grpo_loss, dapo_loss
 from .verifiers import verify
 
-@torch.no_grad()
-def rollout(model,prompts,samples,max_new_tokens=128):
-    seqs=[]
-    for _ in range(samples):
-        seq,_=model.generate(prompts.clone(),max_new_tokens=max_new_tokens)
-        seqs.append(seq)
-    return seqs
-
-def _logp(model,seqs): return torch.stack([model.sequence_logprob(x).mean() for x in seqs])
+def _logp(model,seqs,masks=None):
+    if masks is None: return torch.stack([model.sequence_logprob(x).mean() for x in seqs])
+    return torch.stack([model.sequence_logprob(x,m).mean() for x,m in zip(seqs,masks)])
 
 class RewardModelTrainer:
     def __init__(self,model,optimizer): self.model=model; self.optimizer=optimizer
@@ -23,14 +16,17 @@ class RewardModelTrainer:
 class DPOTrainer:
     def __init__(self,policy,reference,optimizer,beta=0.1): self.policy=policy; self.reference=reference.eval(); self.optimizer=optimizer; self.beta=beta
     def step(self,batch):
-        self.policy.train(); pc=self.policy.sequence_logprob(batch["chosen_ids"]); pr=self.policy.sequence_logprob(batch["rejected_ids"])
-        with torch.no_grad(): rc=self.reference.sequence_logprob(batch["chosen_ids"]); rr=self.reference.sequence_logprob(batch["rejected_ids"])
+        self.policy.train()
+        cm=batch.get("chosen_mask"); rm=batch.get("rejected_mask")
+        pc=self.policy.sequence_logprob(batch["chosen_ids"],cm); pr=self.policy.sequence_logprob(batch["rejected_ids"],rm)
+        with torch.no_grad():
+            rc=self.reference.sequence_logprob(batch["chosen_ids"],cm); rr=self.reference.sequence_logprob(batch["rejected_ids"],rm)
         loss=-F.logsigmoid(self.beta*((pc-rc)-(pr-rr))).mean(); self.optimizer.zero_grad(); loss.backward(); self.optimizer.step(); return float(loss.detach())
 
 class PPOTrainer:
     def __init__(self,model,optimizer,clip_low=0.2,clip_high=0.2): self.model=model; self.optimizer=optimizer; self.clip_low=clip_low; self.clip_high=clip_high
-    def update(self,seqs,old_logp,advantages):
-        self.model.train(); new=_logp(self.model,seqs); loss=ppo_loss(new,old_logp,advantages,self.clip_low,self.clip_high); self.optimizer.zero_grad(); loss.backward(); self.optimizer.step(); return float(loss.detach())
+    def update(self,seqs,old_logp,advantages,masks=None):
+        self.model.train(); new=_logp(self.model,seqs,masks); loss=ppo_loss(new,old_logp,advantages,self.clip_low,self.clip_high); self.optimizer.zero_grad(); loss.backward(); self.optimizer.step(); return float(loss.detach())
 
 class GRPOTrainer:
     def __init__(self,model,reference,optimizer,kl_beta=0.02): self.model=model; self.reference=reference.eval(); self.optimizer=optimizer; self.kl_beta=kl_beta

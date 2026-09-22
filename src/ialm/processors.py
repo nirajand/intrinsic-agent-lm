@@ -55,10 +55,15 @@ def dpo(row):
     if prompt and chosen and rejected: return {"prompt":str(prompt),"chosen":chosen,"rejected":rejected}
     return None
 
+def _first_present(row,keys):
+    for k in keys:
+        if row.get(k) is not None: return row[k]
+    return None
+
 def reward(row):
     d=dpo(row)
     if not d:return None
-    score=row.get("score") or row.get("overall_score") or row.get("reward")
+    score=_first_present(row,("score","overall_score","reward"))
     if score is None:
         attrs=[row.get(k) for k in ("helpfulness","correctness","coherence")]
         if all(v is not None for v in attrs): score=sum(float(v) for v in attrs)/3.0

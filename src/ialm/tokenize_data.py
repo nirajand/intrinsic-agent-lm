@@ -1,5 +1,4 @@
 from __future__ import annotations
-from typing import Any
 
 class HFTokenizerAdapter:
     def __init__(self, tokenizer_id:str, revision=None):
@@ -20,9 +19,17 @@ class HFTokenizerAdapter:
         if "text" in item:return self.text(item["text"],m)|{"text":item["text"]}
         if "messages" in item:return self.chat(item["messages"],m)
         if "prompt" in item:
-            p=self.text(item["prompt"],m)
-            c=self.text(item["chosen"],m); r=self.text(item["rejected"],m)
-            return {"prompt":item["prompt"],"chosen":item["chosen"],"rejected":item["rejected"],"prompt_ids":p["input_ids"],"chosen_ids":c["input_ids"],"rejected_ids":r["input_ids"]}
-        if "answer" in item:
+            out={"prompt":item["prompt"],"prompt_ids":self.text(item["prompt"],m)["input_ids"]}
+            if "chosen" in item and "rejected" in item:
+                out["chosen"]=item["chosen"]; out["rejected"]=item["rejected"]
+                out["chosen_ids"]=self.text(item["chosen"],m)["input_ids"]
+                out["rejected_ids"]=self.text(item["rejected"],m)["input_ids"]
+            if "answer" in item:
+                out["answer"]=item["answer"]
+                out["answer_ids"]=self.text(item["answer"],m)["input_ids"]
+            for key in ("verifier","domain","source","reward","score"):
+                if key in item: out[key]=item[key]
+            return out
+        if "answer" in item and "prompt" in item:
             return item | {"prompt_ids":self.text(item["prompt"],m)["input_ids"],"answer_ids":self.text(item["answer"],m)["input_ids"]}
         return item

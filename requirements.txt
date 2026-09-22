@@ -1,0 +1,7 @@
+torch>=2.5
+safetensors>=0.4
+pyyaml>=6.0
+datasets>=3.0
+huggingface_hub>=0.28
+transformers>=4.50
+pytest>=8

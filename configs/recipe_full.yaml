@@ -16,7 +16,7 @@ model:
   tie_embeddings: true
   use_qk_norm: true
 train:
-  output_dir: runs/frontier-research
+  output_dir: runs/full
   device: cuda
   seed: 42
   batch_size: 128
@@ -34,8 +34,10 @@ train:
   grpo_kl_beta: 0.02
   ppo_clip_low: 0.2
   ppo_clip_high: 0.2
+  ppo_epochs: 2
   dapo_clip_low: 0.2
   dapo_clip_high: 0.28
+  overlong_penalty: 0.0
   stage_order:
   - pretrain
   - sft
@@ -54,7 +56,7 @@ datasets:
     subset: sample-10BT
     split: train
     streaming: true
-    max_examples: null
+    max_examples: 100000
     weight: 0.72
   - name: arxiv-complete-paper-text
     repo: secemp9/arxiv-complete
@@ -62,7 +64,7 @@ datasets:
     split: train
     streaming: true
     max_examples: 50000
-    weight: 0.1
+    weight: 0.10
     license: mixed-arxiv-author-licenses
     provenance_review: required
   - name: zgcm-1-pretrain-stage1
@@ -71,7 +73,7 @@ datasets:
     split: train
     streaming: true
     max_examples: 100000
-    weight: 0.08
+    weight: 0.10
     license: other-mixed-upstream
     requires_hf_acceptance: true
     provenance_review: required
@@ -81,7 +83,7 @@ datasets:
     split: py
     streaming: true
     max_examples: 100000
-    weight: 0.1
+    weight: 0.08
     license: apache-2.0-plus-upstream-repository-licenses
     provenance_review: required
   sft:
@@ -89,13 +91,14 @@ datasets:
     repo: teknium/OpenHermes-2.5
     split: train
     max_examples: 500000
+    weight: 0.50
   - name: ultradata-sft-agent-code
     repo: openbmb/UltraData-SFT-Agent-2609
     subset: Code-Agent
     split: train
     streaming: true
     max_examples: 50000
-    weight: 0.15
+    weight: 0.12
     license: apache-2.0
     provenance_review: required
   - name: ultradata-sft-agent-tool-use
@@ -104,7 +107,7 @@ datasets:
     split: train
     streaming: true
     max_examples: 30000
-    weight: 0.1
+    weight: 0.08
     license: apache-2.0
     provenance_review: required
   - name: fable-5-premium-v2
@@ -112,7 +115,7 @@ datasets:
     split: train
     streaming: true
     max_examples: 50000
-    weight: 0.1
+    weight: 0.08
     license: mit
     provenance_review: required
   - name: morethought-fable-5-1-reasoning
@@ -120,7 +123,7 @@ datasets:
     split: train
     streaming: true
     max_examples: 5000
-    weight: 0.05
+    weight: 0.06
     license: apache-2.0
     provenance_review: required
   - name: spark-234k-scientific-reasoning
@@ -128,7 +131,7 @@ datasets:
     split: train
     streaming: true
     max_examples: 100000
-    weight: 0.1
+    weight: 0.08
     license: apache-2.0
     provenance_review: required
   - name: kimi-cyber-reasoning
@@ -136,7 +139,7 @@ datasets:
     split: train
     streaming: true
     max_examples: 997
-    weight: 0.03
+    weight: 0.04
     license: wtfpl
     provenance_review: required
   - name: oi-uae-cyber-security
@@ -144,7 +147,7 @@ datasets:
     split: train
     streaming: true
     max_examples: 50000
-    weight: 0.02
+    weight: 0.04
     license: research-only-non-commercial
     commercial_use: prohibited
     provenance_review: required
@@ -165,6 +168,7 @@ datasets:
     repo: nvidia/HelpSteer2
     subset: preference
     split: train
+    max_examples: 100000
   rlaif:
   - name: active-ultrafeedback-rlaif
     repo: ActiveUltraFeedback/ultrafeedback
@@ -178,6 +182,7 @@ datasets:
     subset: default
     split: train
     max_examples: 60000
+    weight: 0.80
   - &id002
     name: ultradata-rl-math
     repo: openbmb/UltraData-RL-2609
@@ -185,7 +190,7 @@ datasets:
     split: train
     streaming: true
     max_examples: 30000
-    weight: 0.4
+    weight: 0.10
     license: apache-2.0-plus-upstream-licenses
     provenance_review: required
   - &id003
@@ -195,7 +200,7 @@ datasets:
     split: train
     streaming: true
     max_examples: 15000
-    weight: 0.3
+    weight: 0.10
     license: apache-2.0-plus-upstream-licenses
     provenance_review: required
   grpo:
@@ -221,6 +226,7 @@ stages:
     max_steps: 10000
   rlhf:
     max_steps: 5000
+    max_new_tokens: 256
   rlaif:
     max_steps: 5000
   rlvr:
@@ -230,11 +236,13 @@ stages:
     max_new_tokens: 2048
   ppo:
     max_steps: 5000
+    max_new_tokens: 128
   dapo:
     max_steps: 10000
     max_new_tokens: 4096
 dataset_policy:
   curated_config: configs/datasets/2026_curated_additions.yaml
-  mixture_policy: weighted_by_stage
+  mixture_policy: sequential_by_recipe_order
   max_local_materialization: explicit_per_dataset
   license_gate: warn_and_require_provenance_review
+  revision_policy: pin_revision_before_reproducible_run

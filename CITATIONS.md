@@ -2,7 +2,15 @@
 
 This project references upstream datasets but does not redistribute their contents. Check the upstream dataset card and item-level provenance before training or redistributing a model.
 
-## Added Hugging Face datasets
+## Default-recipe datasets
+
+- `HuggingFaceFW/fineweb` — FineWeb; `sample-10BT` sample config (~10B GPT-2 tokens per card). https://huggingface.co/datasets/HuggingFaceFW/fineweb
+- `teknium/OpenHermes-2.5` — instruction/chat compilation. https://huggingface.co/datasets/teknium/OpenHermes-2.5
+- `nvidia/HelpSteer2` — human-feedback preference data for reward modeling. https://huggingface.co/datasets/nvidia/HelpSteer2
+- `ActiveUltraFeedback/ultrafeedback` — active-learning preference subsets. https://huggingface.co/datasets/ActiveUltraFeedback/ultrafeedback
+- `open-r1/OpenR1-Math-220k` — verified mathematical reasoning traces for SFT/RL. https://huggingface.co/datasets/open-r1/OpenR1-Math-220k
+
+## Curated Hugging Face additions
 
 - `secemp9/arxiv-complete` — arXiv complete corpus; mixed author licenses. https://huggingface.co/datasets/secemp9/arxiv-complete
 - `MoreThought/Fable-5.1-Max-Reasoning-Filtered-5000x` — 5,000 filtered agentic coding/reasoning traces; Apache-2.0 per card. https://huggingface.co/datasets/MoreThought/Fable-5.1-Max-Reasoning-Filtered-5000x
@@ -13,7 +21,7 @@ This project references upstream datasets but does not redistribute their conten
 - `echel0nn1881/kimi-cyber-reasoning` — 997 explicit reasoning/tool-call cybersecurity traces; WTFPL per card. https://huggingface.co/datasets/echel0nn1881/kimi-cyber-reasoning
 - `saidutta69/fable-5-premium-v2` — 100,000 agent traces with tool-call structures; MIT per card. https://huggingface.co/datasets/saidutta69/fable-5-premium-v2
 - `saidutta69/fable-5-premium` — 12,730-record predecessor; kept as a disabled legacy fallback because v2 supersedes it in the default mixture. https://huggingface.co/datasets/saidutta69/fable-5-premium
-- `openbmb/UltraData-RL-2609` — 85,995 verifiable RL samples across Math, Knowledge, Long-Context and Code; Apache-2.0 for the release while upstream licenses continue to apply. https://huggingface.co/datasets/openbmb/UltraData-RL-2609
+- `openbmb/UltraData-RL-2609` — verifiable RL samples across Math, Knowledge, Long-Context and Code; Apache-2.0 for the release while upstream licenses continue to apply. https://huggingface.co/datasets/openbmb/UltraData-RL-2609
 - `oi-uae/cyber-security` — cybersecurity instruction/chat dataset; research-only, non-commercial license per card. https://huggingface.co/datasets/oi-uae/cyber-security
 
 ## Relevant research
@@ -22,3 +30,4 @@ This project references upstream datasets but does not redistribute their conten
 - Toolformer — https://arxiv.org/abs/2302.04761
 - DeepSeek-R1 — https://arxiv.org/abs/2501.12948
 - DAPO — https://arxiv.org/abs/2503.14476
+- Bradley-Terry preference ranking (reward modeling formulation)

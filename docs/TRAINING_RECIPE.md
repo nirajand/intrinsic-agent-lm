@@ -1,15 +1,16 @@
 # End-to-end training recipe
 
-This is the operational recipe. `configs/recipe_full.yaml` is the machine-readable counterpart.
+Operational recipe. Machine-readable counterpart: `configs/recipe_full.yaml`.
 
 ## 1. Bootstrap infrastructure
 
-Use a distributed GPU environment for frontier-scale runs. The 70B-style configuration is only an architecture target; it requires substantial GPU memory, interconnect bandwidth, checkpoint storage, and data throughput.
+Distributed GPU environment required for large runs. `configs/recipe_full.yaml` is a ~4k-dimension, 32-layer demonstrator-scale configuration, not a production frontier size. Large runs need GPU memory, interconnect, checkpoint storage, and data throughput.
 
 Install:
 
 ```bash
-pip install -e '.[all]'
+pip install -r requirements.txt
+pip install -e . --no-deps
 ```
 
 Authenticate to Hugging Face when using gated/private artifacts:
@@ -20,7 +21,7 @@ huggingface-cli login
 
 ## 2. Dataset acquisition
 
-The dataset manager supports either ordinary Hub caching or streaming. For massive corpora, streaming is preferred during experiments; for a fixed reproducible release, materialize selected shards and pin the dataset revision.
+Hub caching or streaming. For massive corpora, stream with an explicit `max_examples` cap; for a fixed reproducible release, materialize selected shards and pin `revision`.
 
 Example:
 
@@ -35,11 +36,13 @@ Repeat per stage or run the full pipeline directly:
 ialm train configs/recipe_full.yaml
 ```
 
-The manager records source, split, subset, row count, preparation stage and SHA-256 of every generated prepared shard in `data/manifest.jsonl`.
+The manager records source, split, subset, row count, preparation stage and SHA-256 of every prepared shard in `data/manifest.jsonl`.
+
+Full materialization without a cap requires `IALM_ALLOW_FULL_DOWNLOAD=1`.
 
 ## 3. Pretraining
 
-Use a broad high-quality web mixture plus code, mathematics, scientific text, books and permissibly licensed corpora. FineWeb is included as the default web corpus template; its dataset card documents 10BT/100BT/350BT sample configurations. Do not treat FineWeb alone as sufficient for a frontier model.
+Broad high-quality mixture: web + code + math + scientific text + licensed corpora. FineWeb is a template entry only; its card documents sample-10BT and larger configs. Do not treat FineWeb alone as sufficient.
 
 Objective:
 
@@ -47,67 +50,63 @@ Objective:
 L_pretrain = CE(next_token_logits, target_tokens)
 ```
 
-Train on packed fixed-length sequences. Use gradient accumulation to obtain a large effective token batch. Save optimizer, scheduler, dataloader and RNG state for exact resume in the production implementation.
+Effective batch = `micro_batch_size * grad_accum_steps`. Linear warmup for `warmup_steps`, then decay toward `min_lr_ratio * lr` over `max_steps`.
 
 ## 4. SFT / instruction tuning
 
-Mix general instruction data, reasoning traces, tool-use traces, coding, math, long-context tasks and domain-specific exemplars. The supplied OpenHermes-2.5 dataset is a starting corpus, not a complete frontier-quality mixture.
+Mix general instruction data, reasoning traces, tool-use traces, coding, math, long-context tasks and domain-specific exemplars. OpenHermes-2.5 is a starting corpus, not a complete mixture.
 
-Important processing rules:
+Processing rules:
 
 - normalize role names into system/developer/user/tool/assistant;
 - preserve tool-call/result boundaries;
-- mask labels for prompt tokens when using assistant-only loss;
+- optional assistant-only loss (prompt masking) is a future extension — default pipeline trains full tokenized sequences;
 - cap and audit conversation length;
 - deduplicate near-identical examples;
 - record source provenance.
 
-The native action head receives action labels when traces provide them.
+The native action head exists in the architecture. Dedicated action-label supervision is not wired in the default recipe; tool traces train via LM loss on supervised tokens.
 
 ## 5. Reward modeling
 
-Build one or more reward models rather than relying on a single scalar objective. The native verifier/value head can be trained with a Bradley-Terry-style pairwise loss:
+Pairwise Bradley-Terry loss on the native verifier head (optimizer must target reward-model parameters):
 
 ```text
 L_rm = -log sigma(r(chosen) - r(rejected))
 ```
 
-Keep a held-out preference set. Track reward-model calibration and disagreement; do not evaluate the reward model only on the training preferences.
+Keep a held-out preference set. Track calibration and disagreement; do not evaluate only on training preferences.
 
-HelpSteer2 is included as a reward-model dataset template.
+HelpSteer2 is the default reward-model dataset template.
 
 ## 6. DPO
 
-Use high-quality chosen/rejected pairs. Keep a frozen reference model:
+High-quality chosen/rejected pairs. Frozen reference model:
 
 ```text
 L_DPO = -log sigma(beta * ((log pi(y+) - log pi_ref(y+))
                          - (log pi(y-) - log pi_ref(y-))))
 ```
 
-The reference must actually be frozen. Do not replace it with the current policy.
+The reference must be frozen, not the current policy. Sequence log-probs exclude padding via attention masks.
 
 ## 7. RLHF
-
-Classical RLHF in this project means:
 
 ```text
 human preferences -> reward model -> rollout -> PPO -> updated policy
 ```
 
-The PPO stage must snapshot old log-probabilities before updating the policy. Value learning should use an explicit value head rather than conflating verifier and policy likelihood.
+PPO snapshots old log-probabilities from the behavior policy, then runs `ppo_epochs` gradient updates per rollout so the clip ratio can leave 1. Value learning should use an explicit value head rather than conflating verifier and policy likelihood (value-head training not fully wired in the reference PPO path).
 
 ## 8. RLAIF
 
-Generate or collect preference judgments from a separate AI evaluator. Store evaluator model/version, rubric, scores, and prompt template as dataset metadata. Convert the resulting pairwise labels into DPO or reward-model examples.
+Preference judgments from a separate AI evaluator. Store evaluator model/version, rubric, scores, and prompt template as dataset metadata. Convert pairwise labels into DPO examples (`ialm` stage `rlaif` runs DPO on prepared pairs). `judges.AIFeedbackJudge` is an offline helper for generating judgments — not run inside the training loop by default.
 
-Do not let the policy under training be the only evaluator of itself. That creates a correlated evaluator/policy failure mode and can turn self-consistency into false confidence.
+Do not let the policy under training be the only evaluator of itself. That creates a correlated evaluator/policy failure mode.
 
 ## 9. RLVR
 
-Prefer deterministic or independently executable verifiers whenever possible. The reference registry implements numeric math, exact string, and JSON validity rewards. Add stronger verifiers for coding, theorem proving and structured tool execution behind controlled sandboxes.
-
-Reward should be a function of verifiable task success rather than stylistic similarity:
+Deterministic or independently executable verifiers. Registry: numeric math, exact string, JSON validity. Add stronger verifiers for coding, theorem proving, structured tool execution behind controlled sandboxes.
 
 ```text
 R = verifier(output, target)
@@ -115,34 +114,38 @@ R = verifier(output, target)
 
 ## 10. GRPO
 
-For each prompt, sample a group of completions. Compute rewards for each completion and normalize within the group:
+Per prompt, sample a group; normalize rewards within the group:
 
 ```text
 A_i = (R_i - mean(R)) / (std(R) + eps)
 ```
 
-Optimize the policy while constraining drift against a reference policy. Keep group sampling reproducible and log the complete group reward distribution.
+Optimize with reference-policy KL (`grpo_kl_beta`). Keep group sampling reproducible; log group reward distribution.
 
 ## 11. PPO
 
-Maintain old policy log-probabilities and a value estimate. Optimize the clipped surrogate:
+Behavior-policy old log-probabilities + clipped surrogate:
 
 ```text
 r_t(theta) = exp(log pi_theta - log pi_old)
 L_policy = -min(r_t A_t, clip(r_t, 1-eps_low, 1+eps_high) A_t)
 ```
 
-The code exposes separate lower and upper clip controls.
+Separate lower/upper clip controls. `ppo_epochs` > 1 required for clipping to engage after the first parameter update.
 
 ## 12. DAPO
 
-The project exposes a DAPO-style stage with separate clip bounds, dynamic group resampling hooks, and explicit overlong-response shaping. The exact implementation must remain faithful to the research configuration being reproduced; do not claim that simply selecting asymmetric clipping reproduces the published DAPO system.
+Asymmetric clip bounds, dynamic group resampling when group rewards are constant, and overlong penalty:
 
-The published DAPO system specifically emphasizes decoupled clipping and dynamic sampling as important techniques in large-scale RL. Pin the paper/repository version before a reproducibility run.
+```text
+L_overlong = mean_i( overlong_penalty * max(0, gen_len_i - max_new_tokens) * log pi_i )
+```
+
+Penalty uses actual generated length (not `max_seq_len`) and multiplies sequence log-prob so it is gradient-bearing. This is not a claim that selecting asymmetric clipping reproduces the full published DAPO system. Pin the paper/repository version before a reproducibility run.
 
 ## 13. Automatic progression / alignment
 
-The pipeline stage order is declarative:
+Stage order is declarative:
 
 ```yaml
 stage_order:
@@ -158,7 +161,7 @@ stage_order:
   - dapo
 ```
 
-That is the correct interpretation of "alignment begins automatically": once the pipeline reaches the configured stage, the matching data processor, loss and optimizer are activated automatically. It is not an autonomous proof that the model is aligned.
+"Alignment begins automatically" means: when the pipeline reaches the configured stage, the matching data processor, loss and optimizer activate. It is not an autonomous proof that the model is aligned.
 
 ## 14. Agentic evaluation before promotion
 
@@ -176,4 +179,4 @@ Do not promote a checkpoint from training loss alone. Evaluate at minimum:
 - regression against previous checkpoint;
 - contamination and data leakage checks.
 
-Save all metrics and the exact dataset/recipe revisions alongside the checkpoint.
+Save metrics and exact dataset/recipe revisions alongside the checkpoint.

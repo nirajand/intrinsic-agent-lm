@@ -28,11 +28,12 @@ class AgentRuntime:
     only registered tools, then returns a structured observation to the model.
     """
     def __init__(self,registry:ToolRegistry, max_steps:int=16, max_tool_risk:float=0.5):
-        self.registry=registry; self.max_steps=max_steps; self.max_tool_risk=max_tool_risk
+        self.registry=registry; self.max_steps=max_steps; self.max_tool_risk=max_tool_risk; self._used=0
     def execute_tool(self,name,arguments):
+        if self._used>=self.max_steps: raise RuntimeError(f"runtime max_steps {self.max_steps} exceeded")
         tool=self.registry.get(name)
         if tool.risk>self.max_tool_risk: raise PermissionError(f"tool risk {tool.risk} exceeds runtime budget")
-        result=self.registry.execute(name,arguments)
+        result=self.registry.execute(name,arguments); self._used+=1
         try: payload=json.loads(json.dumps(result,ensure_ascii=False))
         except Exception: payload=str(result)
         return {"tool":name,"ok":True,"result":payload}

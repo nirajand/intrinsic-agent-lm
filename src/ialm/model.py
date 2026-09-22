@@ -1,7 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
 import math
-from typing import Optional
 import torch
 from torch import nn
 import torch.nn.functional as F
